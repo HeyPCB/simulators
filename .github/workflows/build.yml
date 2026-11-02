@@ -1,0 +1,46 @@
+# Manual rebuilds only (workflow_dispatch): never on a push, so this repository
+# costs no Actions minutes unless someone asks for a rebuild. Images are
+# normally built, smoke-tested and pushed from a maintainer's machine with
+# tools/build.sh; this is the same script on GitHub's runners.
+name: build
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "Image folder to build (e.g. esp32-qemu)"
+        required: true
+        type: string
+      push:
+        description: "Push to ghcr.io/heypcb after the smoke tests pass"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - name: arm64 emulation
+        run: docker run --privileged --rm tonistiigi/binfmt:qemu-v10.2.3@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0 --install arm64
+      - name: containerd image store (multi-platform images)
+        run: |
+          echo '{"features":{"containerd-snapshotter":true}}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+      - name: log in to ghcr.io
+        if: ${{ inputs.push }}
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: build, smoke-test, push
+        env:
+          REVISION: ${{ github.sha }}
+          IMAGE: ${{ inputs.image }}
+          PUSH: ${{ inputs.push }}
+        run: |
+          case "$IMAGE" in *[!a-z0-9-]*|"") echo "bad image name"; exit 2;; esac
+          if [ "$PUSH" = "true" ]; then tools/build.sh "$IMAGE" --push; else tools/build.sh "$IMAGE"; fi
