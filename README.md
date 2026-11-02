@@ -104,4 +104,51 @@ full history):
   cache in the final stage, `USER 10001:10001`; the smoke test runs it with
   no network, a read-only root filesystem and every capability dropped.
 
-The results of the last run are below.
+### The last run (2026-11-02, before the repository and the `1.0.0` images were made public)
+
+| Check | esp32c3-qemu 1.0.0 | esp32-qemu 1.0.0 |
+|---|---|---|
+| runs as | `10001:10001` (amd64, arm64) | `10001:10001` (amd64, arm64) |
+| `docker history --no-trunc`, env, labels: deny patterns | none (both platforms) | none (both platforms) |
+| secret-bearing files anywhere in the filesystem | none | none |
+| compiler, build tool, git, curl, wget, Python, pip | none | none |
+| apt lists, cached packages | none | none |
+| gitleaks over `/opt/heypcb-*` | no leaks | no leaks |
+| trufflehog over `/opt/heypcb-*` | 0 findings | 0 findings |
+| deny patterns over every file in `/opt/heypcb-*` | none | none |
+
+`tools/scan.sh` was also run on a test image planted with a `.env` file,
+an AWS-style key, a tailnet host name and `USER 0`: it failed it on the
+user, the history, the file, gitleaks and the deny patterns (trufflehog alone
+did not flag the made-up key: the other layers are why there are five).
+
+The repository: gitleaks (`dir` over the files; `git` over every commit) no
+leaks; trufflehog over the files and the full history 0 findings; the deny
+patterns, internal names included, over every commit's patch matched
+nothing but the account's display name in the commit authors. The smoke-test
+firmware was rebuilt in a container for this repository because the images
+built earlier on a workstation carried its home directory in their strings.
+
+### The smoke test, measured (2026-11-02)
+
+| image | platform | serial | LED gaps (machine time) | press → `pressed`, release → `released` | wall |
+|---|---|---|---|---|---|
+| esp32c3-qemu 1.0.0 | amd64 | `boot esp32c3`, 11 `led=` lines | 254.6–256.0 ms | 20.1 ms, 20.7 ms | 7.5 s |
+| esp32c3-qemu 1.0.0 | arm64 (emulated) | `boot esp32c3`, 11 `led=` lines | 254.6–256.0 ms | 19.7 ms, 20.0 ms | 148.3 s |
+| esp32-qemu 1.0.0 | amd64 | `boot esp32`, 8 `led=` lines | 249.6, then 250.0 ms | 20.1 ms, 19.7 ms | 6.6 s |
+| esp32-qemu 1.0.0 | arm64 (emulated) | `boot esp32`, 8 `led=` lines | 249.6, then 250.0 ms | 19.3 ms, 19.7 ms | 90.7 s |
+
+arm64 was built and run under emulation on an x86-64 host; it has not been
+run on arm64 hardware.
+
+### Published
+
+| image | tags | index digest | platforms |
+|---|---|---|---|
+| `ghcr.io/heypcb/esp32c3-qemu` | `1.0.0`, `64aed503e34a` | `sha256:ae483f1d9f930980610c50969290271ac37ee3f753add12efb08c5da4c14ce16` | linux/amd64 `sha256:9f710de7…`, linux/arm64 `sha256:95b31201…` |
+| `ghcr.io/heypcb/esp32-qemu` | `1.0.0`, `64aed503e34a` | `sha256:39d06deede35b7b38be693856f95c307325407d0b96f2db1e83325114331df25` | linux/amd64 `sha256:f999f1f1…`, linux/arm64 `sha256:ded82b3d…` |
+
+Both were built from commit `1394e5202b4d0a6615f0fda194cf0944aa6e06cc` of
+this repository (their `org.opencontainers.image.revision`). Older tags in
+the same packages (`64aed50`) predate this repository and are not built from
+it.

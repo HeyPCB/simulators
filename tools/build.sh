@@ -29,4 +29,15 @@ done
 if [ "$PUSH" = 1 ]; then
   docker push "$IMG:$VERSION"
   docker push "$IMG:$UPSTREAM_TAG"
+  # The registry links a multi-platform package to its repository from the
+  # INDEX's annotations, not the images' labels: write the index again with
+  # them, over exactly the platform images just tested and pushed.
+  docker buildx imagetools create \
+    --annotation "index:org.opencontainers.image.source=https://github.com/HeyPCB/simulators" \
+    --annotation "index:org.opencontainers.image.description=$DESCRIPTION" \
+    --annotation "index:org.opencontainers.image.licenses=$LICENSES" \
+    --annotation "index:org.opencontainers.image.version=$VERSION" \
+    --annotation "index:org.opencontainers.image.revision=$REVISION" \
+    -t "$IMG:$VERSION" -t "$IMG:$UPSTREAM_TAG" "$IMG:$VERSION"
+  docker buildx imagetools inspect "$IMG:$VERSION"
 fi
