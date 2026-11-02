@@ -111,18 +111,19 @@ full history):
   cache in the final stage, `USER 10001:10001`; the smoke test runs it with
   no network, a read-only root filesystem and every capability dropped.
 
-### The last run (2026-11-02, before the repository and the `1.0.0` images were made public)
+### The last run (2026-11-02, before each image was pushed)
 
-| Check | esp32c3-qemu 1.0.0 | esp32-qemu 1.0.0 |
-|---|---|---|
-| runs as | `10001:10001` (amd64, arm64) | `10001:10001` (amd64, arm64) |
-| `docker history --no-trunc`, env, labels: deny patterns | none (both platforms) | none (both platforms) |
-| secret-bearing files anywhere in the filesystem | none | none |
-| compiler, build tool, git, curl, wget, Python, pip | none | none |
-| apt lists, cached packages | none | none |
-| gitleaks over `/opt/heypcb-*` | no leaks | no leaks |
-| trufflehog over `/opt/heypcb-*` | 0 findings | 0 findings |
-| deny patterns over every file in `/opt/heypcb-*` | none | none |
+| Check | esp32c3-qemu 1.0.0 | esp32-qemu 1.0.0 | esp8266-emu 1.0.0 |
+|---|---|---|---|
+| runs as | `10001:10001` (amd64, arm64) | `10001:10001` (amd64, arm64) | `10001:10001` (amd64, arm64) |
+| `docker history --no-trunc`, env, labels: deny patterns | none (both platforms) | none (both platforms) | none (both platforms) |
+| secret-bearing files anywhere in the filesystem | none | none | none |
+| compiler, build tool, git, curl, wget, Python, pip | none | none | none |
+| apt lists, cached packages | none | none | none |
+| gitleaks over `/opt/heypcb-*` | no leaks | no leaks | no leaks |
+| trufflehog over `/opt/heypcb-*` | 0 findings | 0 findings | 0 findings |
+| deny patterns over every file in `/opt/heypcb-*` | none | none | none |
+| socket calls the binary imports (`nm -D`) | (QEMU's, reached only by options the sidecar never passes) | (as esp32c3-qemu) | none (built without the network backend; the Dockerfile fails otherwise) |
 
 `tools/scan.sh` was also run on a test image planted with a `.env` file,
 an AWS-style key, a tailnet host name and `USER 0`: it failed it on the
@@ -140,13 +141,17 @@ built earlier on a workstation carried its home directory in their strings.
 
 | image | platform | serial | LED gaps (machine time) | press → `pressed`, release → `released` | wall |
 |---|---|---|---|---|---|
-| esp32c3-qemu 1.0.0 | amd64 | `boot esp32c3`, 11 `led=` lines | 254.6–256.0 ms | 20.1 ms, 20.7 ms | 7.5 s |
-| esp32c3-qemu 1.0.0 | arm64 (emulated) | `boot esp32c3`, 11 `led=` lines | 254.6–256.0 ms | 19.7 ms, 20.0 ms | 148.3 s |
-| esp32-qemu 1.0.0 | amd64 | `boot esp32`, 8 `led=` lines | 249.6, then 250.0 ms | 20.1 ms, 19.7 ms | 6.6 s |
-| esp32-qemu 1.0.0 | arm64 (emulated) | `boot esp32`, 8 `led=` lines | 249.6, then 250.0 ms | 19.3 ms, 19.7 ms | 90.7 s |
+| esp32c3-qemu 1.0.0 | amd64 | `boot esp32c3`, 11 `led=` lines | 254.6–256.0 ms | 20.4 ms, 19.7 ms | 3.7 s |
+| esp32c3-qemu 1.0.0 | arm64 (emulated) | `boot esp32c3`, 11 `led=` lines | 254.6–256.0 ms | 19.7 ms, 20.3 ms | 79.3 s |
+| esp32-qemu 1.0.0 | amd64 | `boot esp32`, 8 `led=` lines | 249.6, then 250.0 ms | 20.0 ms, 20.0 ms | 4.6 s |
+| esp32-qemu 1.0.0 | arm64 (emulated) | `boot esp32`, 8 `led=` lines | 249.6, then 250.0 ms | 19.7 ms, 19.3 ms | 78.4 s |
+| esp8266-emu 1.0.0 | amd64 | `boot esp8266` at 126.6 ms, 11 `led=` lines | 249.997–250.003 ms | 19.988 ms, 19.984 ms | 0.9 s, 0.8 s (run twice: identical) |
+| esp8266-emu 1.0.0 | arm64 (emulated) | the same, to the microsecond | 249.997–250.003 ms | 19.988 ms, 19.984 ms | 15.4 s, 13.5 s (identical) |
 
-arm64 was built and run under emulation on an x86-64 host; it has not been
-run on arm64 hardware.
+Measured with the firmware in `firmware/` as of the commit that added
+esp8266-emu (the ESP32 and C3 images changed then, with the shared source;
+the same checks had passed on the earlier build). arm64 was built and run
+under emulation on an x86-64 host; it has not been run on arm64 hardware.
 
 ### Published
 
@@ -155,7 +160,10 @@ run on arm64 hardware.
 | `ghcr.io/heypcb/esp32c3-qemu` | `1.0.0`, `64aed503e34a` | `sha256:ae483f1d9f930980610c50969290271ac37ee3f753add12efb08c5da4c14ce16` | linux/amd64 `sha256:9f710de7…`, linux/arm64 `sha256:95b31201…` |
 | `ghcr.io/heypcb/esp32-qemu` | `1.0.0`, `64aed503e34a` | `sha256:39d06deede35b7b38be693856f95c307325407d0b96f2db1e83325114331df25` | linux/amd64 `sha256:f999f1f1…`, linux/arm64 `sha256:ded82b3d…` |
 
-Both were built from commit `1394e5202b4d0a6615f0fda194cf0944aa6e06cc` of
-this repository (their `org.opencontainers.image.revision`). Older tags in
-the same packages (`64aed50`) predate this repository and are not built from
-it.
+| `ghcr.io/heypcb/esp8266-emu` | `1.0.0`, `c4c840d59b60` | `sha256:41d5d85f2daab09422c11429016c050ab510b8b94746fb0c8d7e771bd6322ad1` | linux/amd64 `sha256:2a3dd2df…`, linux/arm64 `sha256:b858d648…` |
+
+The two QEMU images were built from commit
+`1394e5202b4d0a6615f0fda194cf0944aa6e06cc` of this repository, esp8266-emu
+from `f92020b4286a92635575d66de215ff32ef33655f` (each image's
+`org.opencontainers.image.revision`). Older tags in the QEMU packages
+(`64aed50`) predate this repository and are not built from it.
