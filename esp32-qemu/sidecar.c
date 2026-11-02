@@ -16,11 +16,18 @@
  * options, and its socket measurement holds for exactly these arguments. The
  * flash path's commas are doubled (QEMU's option escape) so it stays one value.
  *
- * Time is the machine's own: `-icount shift=3,sleep=off` counts it in
- * instructions (8 ns each), so it is deterministic, a callback waiting on the
- * engine costs the firmware nothing, and an idle firmware's waits are skipped
- * (a batch run goes faster than real time). Every "t" below is microseconds
- * of that clock (QEMU_CLOCK_VIRTUAL); without it the sidecar refuses to run.
+ * Time is the machine's own: `-icount shift=4,sleep=off` counts it in
+ * instructions (16 ns each), so a callback waiting on the engine costs the
+ * firmware nothing, and an idle firmware's waits are skipped (a batch run goes
+ * faster than real time). Every "t" below is microseconds of that clock
+ * (QEMU_CLOCK_VIRTUAL); without it the sidecar refuses to run.
+ *
+ * shift=4 (62.5 M instructions per simulated second; the chip runs 240 MHz),
+ * not the C3's shift=3: the machine runs two Xtensa cores on one host
+ * thread, and a busy loop() cost 3.1-4.1 s of host CPU per simulated second
+ * at shift=3, 2.4 s at shift=4 (measured, 2026-11-02). Timers and millis()
+ * follow the virtual clock and stay exact (a 250 ms blink is 250.0 ms); only
+ * code timed by counting instructions runs about 3.8x slow.
  *
  * Pins: GPIO0..39 as the chip numbers them. The machine reports outputs and
  * directions for GPIO0..31 only (its GPIO block models GPIO_OUT/ENABLE, not
@@ -266,7 +273,7 @@ int main(int argc, char **argv) {
     char *qargv[] = {argv[0], "-M", "esp32-picsimlab", "-nographic", "-nodefaults",
                      "-L", argv[2], "-drive", drive,
                      "-global", "driver=timer.esp32.timg,property=wdt_disable,value=true",
-                     "-icount", "shift=3,sleep=off", "-nic", "none", NULL};
+                     "-icount", "shift=4,sleep=off", "-nic", "none", NULL};
     int qargc = (int)(sizeof qargv / sizeof qargv[0]) - 1;
 
     qinit(qargc, qargv);

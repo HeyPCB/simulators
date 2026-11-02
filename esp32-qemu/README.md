@@ -38,12 +38,17 @@ The protocol is [esp32c3-qemu's](../esp32c3-qemu/README.md#the-protocol).
 - UART0..2 as `U` lines; I2C0/1 answered synchronously by the driver.
 - No Wi-Fi or Bluetooth: `-nic none`, and no radio model is reached.
 - Like the C3's machine, no pull-ups: write a button's idle level first.
-- The machine runs two Xtensa cores in TCG on one host thread: a busy
-  `loop()` cost 3–4 s of host CPU per simulated second on a loaded x86-64
-  machine. Within a run the clock is exact (the starter's 250 ms blink is
-  250.0 ms of machine time), but the program's start moved between runs of
-  one image (853 or 889 ms to its first pin), so a run is not deterministic
-  across runs.
+- **The clock rate.** The machine runs two Xtensa cores in TCG on one host
+  thread, so the sidecar counts time at `-icount shift=4`: 62.5 M
+  instructions per simulated second, where the chip runs 240 MHz. A busy
+  `loop()` then costs about 2.4 s of host CPU per simulated second on a
+  loaded x86-64 machine (3.1–4.1 s at shift=3, 1.35 s at shift=5; measured
+  2026-11-02). Timers, `millis()` and `CCOUNT` follow the virtual clock and
+  stay exact (the starter's 250 ms blink is 250.0 ms of machine time); code
+  timed by counting instructions (a NOP delay, bit-banged timing) runs about
+  3.8x slow.
+- The program's start moved between runs of one image (853 or 889 ms to its
+  first pin at shift=3), so a run is not deterministic across runs.
 
 ## The ROM images
 
@@ -62,7 +67,7 @@ The sidecar's QEMU arguments are fixed in `sidecar.c` and never taken from a
 caller:
 
     -M esp32-picsimlab -nographic -nodefaults -L <rom dir> -drive file=<flash>,if=mtd,format=raw
-    -global driver=timer.esp32.timg,property=wdt_disable,value=true -icount shift=3,sleep=off -nic none
+    -global driver=timer.esp32.timg,property=wdt_disable,value=true -icount shift=4,sleep=off -nic none
 
 Measured with these arguments and no network: `strace -f -e trace=%network`
 over an 8 s run recorded no network system call, and 20 samples of the
