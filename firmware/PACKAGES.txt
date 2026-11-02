@@ -1,0 +1,25 @@
+PlatformIO Core, version 6.1.18
+Resolving esp32c3 dependencies...
+Platform espressif32 @ 8.0.0 (required: platformio/espressif32 @ 8.0.0)
+├── framework-arduinoespressif32 @ 4.30312.261024 (required: platformio/framework-arduinoespressif32 @ ~4.30312.0)
+├── framework-arduinoespressif32-esp32-libs @ 3.3.12 (required: platformio/framework-arduinoespressif32-esp32-libs @ ~3.3.12)
+├── framework-arduinoespressif32-esp32c3-libs @ 3.3.12 (required: platformio/framework-arduinoespressif32-esp32c3-libs @ ~3.3.12)
+├── tool-esptool @ 2.50400.0 (required: platformio/tool-esptool @ ~2.50400.0)
+├── tool-riscv32-esp-elf-gdb @ 12.1.0+20221002 (required: espressif/tool-riscv32-esp-elf-gdb @ ~12.1.0)
+├── tool-xtensa-esp-elf-gdb @ 12.1.0+20221002 (required: espressif/tool-xtensa-esp-elf-gdb @ ~12.1.0)
+├── toolchain-riscv32-esp @ 14.2.0+20260121 (required: platformio/toolchain-riscv32-esp @ 14.2.0+20260121)
+└── toolchain-xtensa-esp-elf @ 14.2.0+20260121 (required: platformio/toolchain-xtensa-esp-elf @ 14.2.0+20260121)
+
+
+Resolving esp32 dependencies...
+Platform espressif32 @ 8.0.0 (required: platformio/espressif32 @ 8.0.0)
+├── framework-arduinoespressif32 @ 4.30312.261024 (required: platformio/framework-arduinoespressif32 @ ~4.30312.0)
+├── framework-arduinoespressif32-esp32-libs @ 3.3.12 (required: platformio/framework-arduinoespressif32-esp32-libs @ ~3.3.12)
+├── framework-arduinoespressif32-esp32c3-libs @ 3.3.12 (required: platformio/framework-arduinoespressif32-esp32c3-libs @ ~3.3.12)
+├── tool-esptool @ 2.50400.0 (required: platformio/tool-esptool @ ~2.50400.0)
+├── tool-riscv32-esp-elf-gdb @ 12.1.0+20221002 (required: espressif/tool-riscv32-esp-elf-gdb @ ~12.1.0)
+├── tool-xtensa-esp-elf-gdb @ 12.1.0+20221002 (required: espressif/tool-xtensa-esp-elf-gdb @ ~12.1.0)
+├── toolchain-riscv32-esp @ 14.2.0+20260121 (required: platformio/toolchain-riscv32-esp @ 14.2.0+20260121)
+└── toolchain-xtensa-esp-elf @ 14.2.0+20260121 (required: platformio/toolchain-xtensa-esp-elf @ 14.2.0+20260121)
+
+

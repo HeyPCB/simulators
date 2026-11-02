@@ -1,0 +1,6 @@
+firmware/out/
+*.flash.bin
+.pio/
+__pycache__/
+.env
+*.env.local
