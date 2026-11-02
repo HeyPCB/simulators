@@ -18,6 +18,12 @@ static const int LED_PIN = 8, BTN_PIN = 9, TX_PIN = 21, RX_PIN = 20;
 #define MCU_NAME "esp32"
 static const int LED_PIN = 2, BTN_PIN = 0, TX_PIN = 1, RX_PIN = 3;
 #define UART Serial0
+#elif defined(ARDUINO_ARCH_ESP8266)
+// An ESP-12 as a WeMos D1 mini or NodeMCU wires it: LED GPIO2, FLASH button
+// GPIO0, UART0 on TX GPIO1 / RX GPIO3 (the core's Serial).
+#define MCU_NAME "esp8266"
+static const int LED_PIN = 2, BTN_PIN = 0;
+#define UART Serial
 #else
 #error "fw-probe: unknown MCU"
 #endif
@@ -28,7 +34,11 @@ static int btnRaw = 0, btnStable = 0;  // 1 = pressed (pin LOW)
 static uint32_t btnChangedAt = 0;
 
 void setup() {
+#if defined(ARDUINO_ARCH_ESP8266)
+  UART.begin(115200);  // UART0 sits on its own pins
+#else
   UART.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN);
+#endif
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
   pinMode(BTN_PIN, INPUT_PULLUP);

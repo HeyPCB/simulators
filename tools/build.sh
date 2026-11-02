@@ -22,9 +22,16 @@ docker build --platform "$PLATFORMS" --build-arg VERSION="$VERSION" --build-arg 
   --build-arg JOBS="${JOBS:-4}" -t "$IMG:$VERSION" -t "$IMG:$UPSTREAM_TAG" "$NAME"
 for p in $(echo "$PLATFORMS" | tr ',' ' '); do
   echo "== smoke $IMG:$VERSION on $p"
-  python3 tools/sidecar_smoke.py --image "$IMG:$VERSION" --platform "$p" \
-    --dir "$SMOKE_DIR" --exe "$SMOKE_EXE" --lib "$SMOKE_LIB" --flash "$SMOKE_FLASH" \
-    --mcu "$SMOKE_MCU" --led "$SMOKE_LED" --button "$SMOKE_BUTTON"
+  if [ "${SMOKE_KIND:-sidecar}" = emu ]; then
+    # An emulator the image runs itself, inputs from a timed script.
+    python3 tools/emu_smoke.py --image "$IMG:$VERSION" --platform "$p" \
+      --dir "$SMOKE_DIR" --exe "$SMOKE_EXE" --flash "$SMOKE_FLASH" \
+      --mcu "$SMOKE_MCU" --led "$SMOKE_LED" --button "$SMOKE_BUTTON"
+  else
+    python3 tools/sidecar_smoke.py --image "$IMG:$VERSION" --platform "$p" \
+      --dir "$SMOKE_DIR" --exe "$SMOKE_EXE" --lib "$SMOKE_LIB" --flash "$SMOKE_FLASH" \
+      --mcu "$SMOKE_MCU" --led "$SMOKE_LED" --button "$SMOKE_BUTTON"
+  fi
 done
 if [ "$PUSH" = 1 ]; then
   docker push "$IMG:$VERSION"

@@ -1,0 +1,33 @@
+--- a/src/main.c
++++ b/src/main.c
+@@ -59,6 +59,8 @@
+ static uint64_t last_out_ns, last_stat_ns, stat_insn_ref, stat_ns_ref;
+ static uint8_t ubuf[2][8192];
+ static int ulen[2], uwire[2];
++// HeyPCB: the emulated time (us since the last reset) of each chunk's first byte.
++static uint64_t ustart[2];
+ static uint64_t uart_total[2], uart_wire[2];
+ static char lastpins[2][18];
+ static char edges[256 * 40];
+@@ -148,7 +150,8 @@
+ {
+     static char hex[sizeof ubuf[0] * 2 + 64];
+     if (!ulen[u]) return;
+-    int o = sprintf(hex, "{\"t\":\"uart\",\"u\":%d,\"w\":%d,\"d\":\"", u, uwire[u]);
++    int o = sprintf(hex, "{\"t\":\"uart\",\"u\":%d,\"w\":%d,\"vt_us\":%llu,\"d\":\"", u, uwire[u],
++                    (unsigned long long)ustart[u]);
+     for (int i = 0; i < ulen[u]; i++) o += sprintf(hex + o, "%02x", ubuf[u][i]);
+     strcpy(hex + o, "\"}");
+     out_line(hex);
+@@ -164,8 +167,10 @@
+     if (uart_log) fputc(b, uart_log);
+     uart_total[u]++;
+     if (w) uart_wire[u]++;
++    if (!ulen[u]) ustart[u] = now_us();
+     ubuf[u][ulen[u]++] = b;
+-    if (ulen[u] == (int)sizeof ubuf[u]) flush_one(u);
++    // HeyPCB: a chunk ends at a newline, so each serial line carries its own time.
++    if (ulen[u] == (int)sizeof ubuf[u] || b == '\n') flush_one(u);
+ }
+ 
+ static void flush_uart(void)

@@ -6,7 +6,7 @@
 #
 # Paths inside are neutral (/fw, /pio-core) so nothing of the machine that
 # built it ends up in the firmware's strings. Needs the network (PlatformIO
-# downloads the pinned platform and toolchains); the result is two files.
+# downloads the pinned platforms and toolchains); the result is three files.
 
 FROM ubuntu:24.04@sha256:224a1869083a311ef3f13648a154ba79832fbef6364d31493642ca03082da254 AS build
 ARG PLATFORMIO_VERSION=6.1.18
@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     && /pio/bin/pip install --no-cache-dir "platformio==${PLATFORMIO_VERSION}"
 COPY fw-probe /fw/fw-probe
 WORKDIR /fw/fw-probe
-RUN /pio/bin/pio run -e esp32c3 -e esp32
+RUN /pio/bin/pio run -e esp32c3 -e esp32 -e esp8266
 # Merge each chip's pieces into one flash image the size the machine models:
 # the bootloader at 0x0 on the C3 and 0x1000 on the classic ESP32, the
 # partition table at 0x8000, Arduino's boot_app0.bin at 0xe000, the app at 0x10000.
@@ -34,10 +34,13 @@ RUN set -e; mkdir /out; \
         --flash-mode dio --flash-size 4MB \
         $boot $d/bootloader.bin 0x8000 $d/partitions.bin 0xe000 $B 0x10000 $d/firmware.bin; \
     done; \
+    # The ESP8266's firmware.bin is already the whole flash from 0x0 (eboot,
+    # then the app, as Arduino-ESP8266's elf2bin writes it): esp8266-emu boots it as it is.
+    cp .pio/build/esp8266/firmware.bin /out/esp8266-fw-probe.flash.bin; \
     ls -la /out
 # What PlatformIO resolved, for the record (firmware/PACKAGES.txt).
 RUN /pio/bin/pio --version > /out/PACKAGES.txt \
-    && /pio/bin/pio pkg list -e esp32c3 -e esp32 >> /out/PACKAGES.txt
+    && /pio/bin/pio pkg list -e esp32c3 -e esp32 -e esp8266 >> /out/PACKAGES.txt
 
 FROM scratch
 COPY --from=build /out/ /

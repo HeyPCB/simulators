@@ -9,6 +9,7 @@ published as a public package. One folder per image.
 |---|---|---|---|---|---|
 | [`ghcr.io/heypcb/esp32c3-qemu`](https://github.com/orgs/HeyPCB/packages/container/package/esp32c3-qemu) | ESP32-C3 (RISC-V): GPIO in/out, UART, I2C | [lcgamboa/qemu `64aed503e34a`](https://github.com/lcgamboa/qemu/tree/64aed503e34a7f52f648374d7d5706ca6d71b606) (`esp32c3-picsimlab`) | GPL-2.0 (QEMU), GPL-2.0-or-later (sidecar) | `1.0.0`, `64aed503e34a` | amd64, arm64 |
 | [`ghcr.io/heypcb/esp32-qemu`](https://github.com/orgs/HeyPCB/packages/container/package/esp32-qemu) | ESP32 classic (Xtensa LX6): GPIO in/out, UART, I2C | [lcgamboa/qemu `64aed503e34a`](https://github.com/lcgamboa/qemu/tree/64aed503e34a7f52f648374d7d5706ca6d71b606) (`esp32-picsimlab`) | GPL-2.0 (QEMU), GPL-2.0-or-later (sidecar) | `1.0.0`, `64aed503e34a` | amd64, arm64 |
+| [`ghcr.io/heypcb/esp8266-emu`](https://github.com/orgs/HeyPCB/packages/container/package/esp8266-emu) | ESP8266 / ESP8285 (Xtensa LX106): GPIO0–16 in/out, UART | [digitake/esp8266-emulator `c4c840d59b60`](https://github.com/digitake/esp8266-emulator/tree/c4c840d59b6081c01cab56c6079fc089243c294d) (`esp8266emu`, + `uart-times.patch`) | MIT | `1.0.0`, `c4c840d59b60` | amd64, arm64 |
 
 Tags are never only `latest`: each image is tagged with its version and with
 the upstream commit it was built from, and should be pulled by digest.
@@ -18,11 +19,13 @@ the upstream commit it was built from, and should be pulled by digest.
     <image>/Dockerfile     the image: upstream source pinned by commit and sha256, base pinned by digest
     <image>/build_lib.sh   how the upstream library is built (GPL-2.0-or-later)
     <image>/sidecar.c      the program the image runs (GPL-2.0-or-later)
+    <image>/*.patch        HeyPCB's changes to the upstream source, applied by the Dockerfile
     <image>/image.env      version, tags, platforms, and how the smoke test drives it
     <image>/README.md      what it simulates, its protocol, its licence and source
     firmware/              fw-probe, the starter firmware the smoke tests boot, and its build
     tools/build.sh         build every platform, smoke-test each, push
     tools/sidecar_smoke.py the smoke test (Python standard library + docker)
+    tools/emu_smoke.py     the same smoke test for an image that runs its emulator directly (esp8266-emu)
     tools/scan.sh          the security checks run before anything is published
 
 ## Rebuild
@@ -55,6 +58,10 @@ what the machine saw, not what the firmware claims:
    the machine's own clock (±10 %);
 3. a button press applied at 1.0 s and released at 1.5 s prints exactly one
    `pressed` and one `released`, each 0–60 ms after the edge.
+
+An image that runs its emulator directly (`SMOKE_KIND=emu` in its `image.env`) is driven by a
+timed input script instead of the sidecar protocol (`tools/emu_smoke.py`), and must also give
+the same edges and serial lines in a second run.
 
 An image is pushed only after every platform passes.
 
